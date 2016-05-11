@@ -8,4 +8,4 @@ I've written this script to test the possibility of extracting all payload infor
 
 The test was mostly successful, but there are still work that needs to be done to the parsing on the more complex structures, like payloads which take a single or nested dicts, or an array of dicts for example.
 
-I've writte a blog post about the Profile Manager code sctructure and where to find the payload information in Profile Manager here: <>
+I've writte a blog post about the Profile Manager code sctructure and this script here: [Extracting Payload Keys From Profile Manager]()
