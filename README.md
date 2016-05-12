@@ -2,7 +2,7 @@
 
 Script to extract payload information from the Profile Manager source code.
 
-**NOTE: This script is not finished as it currently doesn't handle all payload keys and value types**
+**This script is currently just a proof of concept and NOT a finished tool.**
 
 Here's a link to my companion blog post for this script: [Extracting Payload Keys From Profile Manager]() 
 
