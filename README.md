@@ -8,7 +8,7 @@ Here's a link to my companion blog post for this script: [Extracting Payload Key
 
 I've written this script to test the possibility of extracting payload information directly from a Profile Manager installation to circumvent having to create and export profiles from the GUI in order to find the keys Profile Manager includes in a profile.
 
-The test was mostly successful, but there are still work that needs to be done to the parsing:
+The test was mostly successful, but there are still work that needs to be done to the parsing. For example:
 
 * Some values are missed in parsing as the regexes aren't matching everything they should.
 * Payloads which take a single or nested dicts, or an array of dicts.
