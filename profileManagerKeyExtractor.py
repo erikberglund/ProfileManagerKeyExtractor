@@ -6,23 +6,18 @@ import mmap
 import re
 import sys
 
-'''/////////////////'''
-'''//  VARIABLES  //'''
-'''/////////////////'''
-
-# Payload List
-payloads=[]
+'''/////////////////////////////////////////////////////'''
+'''//                    VARIABLES                    //'''
+'''/////////////////////////////////////////////////////'''
 
 # Paths
 file_pm_javascript_packed = "/Applications/Server.app/Contents/ServerRoot/usr/share/devicemgr/frontend/admin/common/app/javascript-packed.js"
 filr_pm_localized_strings = "/Applications/Server.app/Contents/ServerRoot/usr/share/devicemgr/frontend/admin/en.lproj/app/javascript_localizedStrings.js"
 folder_backend_models = "/Applications/Server.app/Contents/ServerRoot/usr/share/devicemgr/backend/app/models"
 
-
-
-'''/////////////////'''
-'''//   CLASSES   //'''
-'''/////////////////'''
+'''/////////////////////////////////////////////////////'''
+'''//                     CLASSES                     //'''
+'''/////////////////////////////////////////////////////'''
 
 class sgr_color:
     clr = '\033[0m'
@@ -30,7 +25,7 @@ class sgr_color:
 
 class payload(object):
 
-	# Title
+	# Title / label
 	@property
 	def title(self):
 		return self._title
@@ -74,9 +69,9 @@ class payload(object):
 			isAutoPush = re.search('\?(.*?):', isAutoPushMatch.group(1), re.DOTALL)
 			isNotAutoPush = re.search('\:(.*?);?$', isAutoPushMatch.group(1), re.DOTALL)
 			if isAutoPush:
-				hint_string_list.append(expandLocalizedString(cleanString(isAutoPush.group(1))) + ' (OTA)')
+				hint_string_list.append(expandLocalizedString(cleanString(isAutoPush.group(1))).capitalize() + ' (OTA)')
 			if isNotAutoPush:
-				hint_string_list.append(expandLocalizedString(cleanString(isNotAutoPush.group(1))) + ' (Manual)')
+				hint_string_list.append(expandLocalizedString(cleanString(isNotAutoPush.group(1))).capitalize() + ' (Manual)')
 			if hint_string_list:
 				self._hint_string = hint_string_list
 		else:
@@ -177,11 +172,13 @@ class knobSet(object):
 		else:
 			print 'UNKNOWN UNIQUE: ' + value
 
-'''/////////////////'''
-'''//   METHODS   //'''
-'''/////////////////'''
+'''/////////////////////////////////////////////////////'''
+'''//                    FUNCTIONS                    //'''
+'''/////////////////////////////////////////////////////'''
 
 lowercase = lambda s: s[:1].lower() + s[1:] if s else ''
+
+# FIXME - cleanString removes the .loc(), but instead that means it's localized so that should be the trigger to expand a localized string.
 
 def cleanString(string):
 	if string:
@@ -204,6 +201,8 @@ def expandLocalizedString(string):
 
 	with open(filr_pm_localized_strings, 'r') as f:
 		file_content = mmap.mmap(f.fileno(), 0, prot=mmap.PROT_READ)
+
+		# Get the localized string associated with passed string
 		locString = re.search('["\']' + cleanedString + '["\']' + ': ["\'](.*?)["\'],', file_content, re.DOTALL)
 		if locString:
 			return locString.group(1)
@@ -212,6 +211,8 @@ def expandLocalizedString(string):
 def knobSetList(file_path):
 	with open(file_path, 'r') as f:
 		file_content = mmap.mmap(f.fileno(), 0, prot=mmap.PROT_READ)
+
+		# Get all knobSetProperty names
 		knobSetListMatch = re.search('knobSetProperties:\[([",a-zA-Z]+)\],', file_content)
 		if knobSetListMatch:
 			return knobSetListMatch.group(1).translate(None, ' "').split(',')
@@ -223,7 +224,6 @@ def parseChildViews(knobSetPayload, knobSetExtendMatch, knobSetRealName, child_v
 
 	# Loop through all view names from list child_views
 	for view in child_views:
-		#print 'View: ' + view
 
 		# Get Title
 		viewContentLabel = re.search(knobSetRealName + 'Label:.*?\({(.*?)\)},.*?:(Admin|SC)', string, re.DOTALL)
@@ -252,10 +252,12 @@ def parseChildViews(knobSetPayload, knobSetExtendMatch, knobSetRealName, child_v
 		# Get the contents of the view's method, try three different regexes to match multiple scenarios.
 		viewContent = re.search(view + ':.*?\({(.*?}\)?,[a-zA-Z]+):(Admin|SC)', string, re.DOTALL)
 		if not viewContent:
+
 			# Matches last method
 			viewContent = re.search(view + ':.*?\({(.*?)}\)}\)', string, re.DOTALL)
 			if not viewContent:
-				# Matches any method "starting" with view name
+
+				# Matches any method "starting" with view name as some have different names
 				viewContent = re.search(view + '[a-zA-Z]+:.*?\({(.*?}\)?,[a-zA-Z]+):(Admin|SC)', string, re.DOTALL)
 
 		if viewContent:
@@ -263,6 +265,8 @@ def parseChildViews(knobSetPayload, knobSetExtendMatch, knobSetRealName, child_v
 			# Check if method body contains variable (field)[Cc]ontentValueKey
 			contentValueKey = re.search('[Cc]ontentValueKey:"(.*?)"', viewContent.group(1), re.DOTALL)
 			if contentValueKey:
+
+				# FIXME - Here
 
 				# Check if contentValueKey matches current knob set name.
 				# If it matches, get title, and description info from this body.
@@ -275,7 +279,6 @@ def parseChildViews(knobSetPayload, knobSetExtendMatch, knobSetRealName, child_v
 					if title:
 						knobSetPayload.title = title.group(1)
 
-					#description = re.search('description:(["\'].*?)[,}]', viewContent.group(1), re.DOTALL)
 					description = re.search('description:(["\'].*?)(?:,[a-zA-Z]+|})', viewContent.group(1), re.DOTALL)
 					if description:
 						knobSetPayload.description = description.group(1)
@@ -291,7 +294,7 @@ def parseChildViews(knobSetPayload, knobSetExtendMatch, knobSetRealName, child_v
 						knobSetPayload.hint_string = hint.group(1)
 					break
 
-				# If contentValueKey didn't match current knob set name, get all funcion names in knobSetExtendMatch. 
+				# FIXME - If contentValueKey didn't match current knob set name, get all funcion names in knobSetExtendMatch.
 				'''#if view.startswith(knobSetRealName) or view.startswith(re.sub(r'^_', '', knobSetRealName)):'''
 				
 				# This can be removed.
@@ -311,7 +314,6 @@ def parseChildViews(knobSetPayload, knobSetExtendMatch, knobSetRealName, child_v
 						if title:
 							knobSetPayload.title = title.group(1)
 
-						#description = re.search('description:(["\'].*?)[,}]', viewContent.group(1), re.DOTALL)
 						description = re.search('description:(["\'].*?)(?:,[a-zA-Z]+|})', viewContent.group(1), re.DOTALL)
 						if description:
 							knobSetPayload.description = description.group(1)
@@ -333,9 +335,6 @@ def parseChildViews(knobSetPayload, knobSetExtendMatch, knobSetRealName, child_v
 			if knobSetSubViews and not set(knobSetSubViews.group(1).translate(None, ' "').split(',')).intersection(last_views):
 				last_views = knobSetSubViews.group(1).translate(None, ' "').split(',')
 				parseChildViews(knobSetPayload, knobSetExtendMatch, knobSetRealName, last_views, string)
-		else:
-			print 'NO VIEW CONTENT IN: ' + view
-
 
 def knobSetInfo(file_path, knobSetPropertyName):
 
@@ -353,7 +352,6 @@ def knobSetInfo(file_path, knobSetPropertyName):
 			sys.exit()
 		else:
 			knobSetName = knobSetNameMatch.group(1)
-			print knobSetName
 
 		# Get KnobSet 'DisplayName' string to extract the file name for the ruby model
 		knobSetNumLinesMatch = re.search(',Admin.' + knobSetName + '.*?numLines[=:]"(.*?)"', file_content)
@@ -416,6 +414,7 @@ def knobSetInfo(file_path, knobSetPropertyName):
 		if not systemLevel:
 			systemLevel = re.findall('Admin.' + knobSetName + '.systemLevel=(.*?),Admin.' , file_content, re.DOTALL)
 			if not systemLevel:
+
 				# FIXME - THIS IS NOT RIGHT
 				systemLevel = re.findall('Admin.' + knobSetName + '.*?systemLevel[=:](.*?),.*?}\),Admin.' , file_content, re.DOTALL)
 			if systemLevel:
@@ -428,6 +427,7 @@ def knobSetInfo(file_path, knobSetPropertyName):
 		if not userLevel:
 			userLevel = re.findall('Admin.' + knobSetName + '.userLevel=(.*?),Admin.' , file_content, re.DOTALL)
 			if not userLevel:
+
 				# FIXME - THIS IS NOT RIGHT
 				userLevel = re.findall('Admin.' + knobSetName + '.*?userLevel[=:](.*?)}\),Admin.' , file_content, re.DOTALL)
 			if userLevel:
@@ -598,7 +598,7 @@ def printKnobSet(file_path, knobSetPropertyName):
 				for hint_string in p.hint_string:
 					if firstValue:
 						firstValue = False
-						print '%18s' % 'AvailableValues: ' + hint_string
+						print '%18s' % 'Hint String: ' + hint_string
 					else:
 						print '%18s' % '' + hint_string
 			elif p.default_value:
@@ -649,7 +649,7 @@ def main(argv):
 		print 'file doesn\'t exist: ' + file_path
 		sys.exit()
 
-	# Create array of all available KnobSet names from the 'knobSetProperties' array.
+	# Create array of all available KnobSet property names from the 'knobSetProperties' array.
 	knobSets = knobSetList(file_path)
 	if not knobSets:
 		print 'Found no KnobSet array in passed file, are you sure Server.app is installed and the file path is correct?'
