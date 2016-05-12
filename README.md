@@ -8,7 +8,7 @@ Script to extract payload information from the Profile Manager source code.
 
 ## Description
 
-Here's a link to my companion blog post for this script: [Extracting Payload Keys From Profile Manager](http://erikberglund.github.io/2016/Extracting_Payload_Keys_from_Profile_Manager/) 
+Here's a link to my companion blog post for this script: [Extracting Payload Keys From Profile Manager](http://erikberglund.github.io/2016/Extracting_Payload_Keys_From_Profile_Manager/) 
 
 I've written this script to test the possibility of extracting payload information directly from a Profile Manager installation to circumvent having to create and export profiles from the GUI in order to find the keys Profile Manager includes in a profile.
 
