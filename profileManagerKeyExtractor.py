@@ -6,15 +6,23 @@ import mmap
 import re
 import sys
 
+'''/////////////////'''
+'''//  VARIABLES  //'''
+'''/////////////////'''
+
+# Payload List
+payloads=[]
+
+# Paths
 file_pm_javascript_packed = "/Applications/Server.app/Contents/ServerRoot/usr/share/devicemgr/frontend/admin/common/app/javascript-packed.js"
 filr_pm_localized_strings = "/Applications/Server.app/Contents/ServerRoot/usr/share/devicemgr/frontend/admin/en.lproj/app/javascript_localizedStrings.js"
 folder_backend_models = "/Applications/Server.app/Contents/ServerRoot/usr/share/devicemgr/backend/app/models"
 
-# Variable used for debug output
-checkView = ""
 
-# 
-payloads=[]
+
+'''/////////////////'''
+'''//   CLASSES   //'''
+'''/////////////////'''
 
 class sgr_color:
     clr = '\033[0m'
@@ -66,16 +74,13 @@ class payload(object):
 			isAutoPush = re.search('\?(.*?):', isAutoPushMatch.group(1), re.DOTALL)
 			isNotAutoPush = re.search('\:(.*?);?$', isAutoPushMatch.group(1), re.DOTALL)
 			if isAutoPush:
-				hint_string_list.append('(Auto Push: ' + cleanString(isAutoPush.group(1)) + ')')
-				#hint_string_list.append('(Auto Push: ' + cleanHintString(isAutoPush.group(1)) + ')')
+				hint_string_list.append(expandLocalizedString(cleanString(isAutoPush.group(1))) + ' (OTA)')
 			if isNotAutoPush:
-				hint_string_list.append('(Not Auto Push: ' + cleanString(isNotAutoPush.group(1)) + ')')
-				#hint_string_list.append('(Not Auto Push: ' + cleanHintString(isNotAutoPush.group(1)) + ')')
+				hint_string_list.append(expandLocalizedString(cleanString(isNotAutoPush.group(1))) + ' (Manual)')
 			if hint_string_list:
-				self._hint_string = ' '.join(hint_string_list)
+				self._hint_string = hint_string_list
 		else:
-			self._hint_string = cleanString(value)
-			#self._hint_string = cleanHintString(value)
+			self._hint_string = expandLocalizedString(cleanString(value))
 
 	# Required
 	@property
@@ -99,7 +104,7 @@ class payload(object):
 		return self._default_value
 	@default_value.setter
 	def default_value(self, value):
-		self._default_value = cleanString(value)
+		self._default_value = expandLocalizedString(cleanString(value))
 
 	# Available Values
 	@property
@@ -108,37 +113,6 @@ class payload(object):
 	@available_values.setter
 	def available_values(self, value):
 		self._available_values = value
-
-def expandLocalizedString(string):
-	quoteMatch = '["\']'
-	if string.startswith('"'):
-		aString = string.replace("\'", "\\'")
-		quoteMatch = '"'
-	elif string.startswith("'"):
-		aString = string.replace('"', '\"')
-		quoteMatch = '\''
-	else:
-		aString = string
-
-	bString = re.sub(r'(^"|"$)', '', aString)
-	cString = bString.replace('(', '\(')
-	cleanedString = cString.replace(')', '\)')
-
-	with open(filr_pm_localized_strings, 'r') as f:
-		file_content = mmap.mmap(f.fileno(), 0, prot=mmap.PROT_READ)
-		locString = re.search('["\']' + cleanedString + '["\']' + ': ["\'](.*?)["\'],', file_content, re.DOTALL)
-		if locString:
-			return locString.group(1)
-	return string
-
-
-def cleanString(string):
-	if string:
-		return re.sub(r'\.loc\(\)', '', string).replace('\n', '')
-
-def cleanHintString(string):
-	if string:
-		return re.sub(r'([^"\'].*?_?string_|[^"\'].*?_?hint_|\.loc\(\))', '', string).replace('\n', '')
 
 class knobSet(object):
 
@@ -203,6 +177,38 @@ class knobSet(object):
 		else:
 			print 'UNKNOWN UNIQUE: ' + value
 
+'''/////////////////'''
+'''//   METHODS   //'''
+'''/////////////////'''
+
+lowercase = lambda s: s[:1].lower() + s[1:] if s else ''
+
+def cleanString(string):
+	if string:
+		return re.sub(r'\.loc\(\)', '', string).replace('\n', '')
+
+def expandLocalizedString(string):
+	quoteMatch = '["\']'
+	if string.startswith('"'):
+		aString = string.replace("\'", "\\'")
+		quoteMatch = '"'
+	elif string.startswith("'"):
+		aString = string.replace('"', '\"')
+		quoteMatch = '\''
+	else:
+		aString = string
+
+	bString = re.sub(r'(^"|"$)', '', aString)
+	cString = bString.replace('(', '\(')
+	cleanedString = cString.replace(')', '\)')
+
+	with open(filr_pm_localized_strings, 'r') as f:
+		file_content = mmap.mmap(f.fileno(), 0, prot=mmap.PROT_READ)
+		locString = re.search('["\']' + cleanedString + '["\']' + ': ["\'](.*?)["\'],', file_content, re.DOTALL)
+		if locString:
+			return locString.group(1)
+	return string
+
 def knobSetList(file_path):
 	with open(file_path, 'r') as f:
 		file_content = mmap.mmap(f.fileno(), 0, prot=mmap.PROT_READ)
@@ -210,11 +216,8 @@ def knobSetList(file_path):
 		if knobSetListMatch:
 			return knobSetListMatch.group(1).translate(None, ' "').split(',')
 
-lowercase = lambda s: s[:1].lower() + s[1:] if s else ''
-
 def parseChildViews(knobSetPayload, knobSetExtendMatch, knobSetRealName, child_views, string):
 
-	#print 'knobSetRealName: ' + knobSetRealName
 	# Create an empty variable for the view last processed, used later to prevent infinite looping.
 	last_views = []
 
@@ -256,16 +259,10 @@ def parseChildViews(knobSetPayload, knobSetExtendMatch, knobSetRealName, child_v
 				viewContent = re.search(view + '[a-zA-Z]+:.*?\({(.*?}\)?,[a-zA-Z]+):(Admin|SC)', string, re.DOTALL)
 
 		if viewContent:
-			# Debug printing
-			if view == checkView:
-				print 'VIEW: ' + viewContent.group(1)
 
 			# Check if method body contains variable (field)[Cc]ontentValueKey
 			contentValueKey = re.search('[Cc]ontentValueKey:"(.*?)"', viewContent.group(1), re.DOTALL)
 			if contentValueKey:
-				# Debug printing
-				if view == checkView:
-					print 'VIEW: ' + viewContent.group(1)
 
 				# Check if contentValueKey matches current knob set name.
 				# If it matches, get title, and description info from this body.
@@ -300,29 +297,6 @@ def parseChildViews(knobSetPayload, knobSetExtendMatch, knobSetRealName, child_v
 				# This can be removed.
 				functionContentMatch = re.findall('[,}]([_a-zA-Z]+:function.*?\.property\(\".*?\")', knobSetExtendMatch[0].replace('\n', ''), re.DOTALL)
 				if functionContentMatch:
-					'''
-					for functionMatch in functionContentMatch:
-						print 'functionMatch: ' + functionMatch
-
-						functionProperty = re.search('property\(\"(.*?)\"', functionMatch, re.DOTALL)
-						if functionProperty and functionProperty.group(1) == knobSetRealName:
-							print 'functionProperty: ' + functionProperty.group(1)
-							print 'knobSetRealName: ' + knobSetRealName
-							
-							label = re.search('label:(["\'].*?)[,}]', viewContent.group(1), re.DOTALL)
-							if label:
-								knobSetPayload.title = label.group(1)
-
-							title = re.search('title:(["\'].*?)[,}]', viewContent.group(1), re.DOTALL)
-							if title:
-								knobSetPayload.title = title.group(1)
-
-							description = re.search('description:(["\'].*?)[,}]', viewContent.group(1), re.DOTALL)
-							if description:
-								knobSetPayload.description = description.group(1)
-							break
-							
-					'''
 
 					# Check if contentValueKey matches the property value of any function in knobSetExtendMatch
 					# Check if that property value matches current knob set name.
@@ -365,19 +339,12 @@ def parseChildViews(knobSetPayload, knobSetExtendMatch, knobSetRealName, child_v
 
 def knobSetInfo(file_path, knobSetPropertyName):
 
+	# Instantiate a new knobSet class instance
 	newKnobSet = knobSet()
 
-	# Open JavaScript file for parsing
+	# Open javascript-packed.js for parsing
 	with open(file_path, 'r') as f:
 		file_content = mmap.mmap(f.fileno(), 0, prot=mmap.PROT_READ)
-
-		'''TEST
-		print 'MATCHING...'
-		knobSetListMatch = re.findall('profilePropertyName=\"(.*?)\"', file_content, re.DOTALL)
-		if knobSetListMatch:
-			print 'SECOND: '
-			print('\n'.join(knobSetListMatch))
-		'''
 
 		# Get KnobSet 'Name' used in functions
 		knobSetNameMatch = re.search(',Admin.([a-zA-Z]+?KnobSet).*?profilePropertyName[=:]"' + knobSetPropertyName, file_content)
@@ -547,6 +514,121 @@ def knobSetInfo(file_path, knobSetPropertyName):
 		newKnobSet.payloads = knobSetPayloads
 		return newKnobSet
 
+def printKnobSet(file_path, knobSetPropertyName):
+
+	# Populate a new knobset class instance for selected knobSet
+	newKnobSet = knobSetInfo(file_path, knobSetPropertyName)
+
+	# Add newline
+	print ''
+
+	try:
+		print '%18s' % 'Payload Name: ' + newKnobSet.payload_name
+	except AttributeError:
+		print '%17s' % 'Payload Name:'
+
+	try:
+		if isinstance(newKnobSet.payload_type, list):
+			firstValue = True
+			for payloadType in newKnobSet.payload_type:
+				if firstValue:
+					firstValue = False
+					print '%18s' % 'Payload Types: ' + payloadType
+				else:
+					print '%18s' % '' + payloadType
+		else:
+			print '%18s' % 'Payload Type: ' + newKnobSet.payload_type
+	except AttributeError:
+		print '%17s' % 'Payload Type:'
+
+	try:
+		print '%18s' % 'Unique: ' + newKnobSet.unique
+	except AttributeError:
+		print '%17s' % 'Unique:'
+
+	# Using the values in the knobSet class, print to stdout:
+	# User Level
+	try:
+		print '%18s' % 'UserLevel: ' + newKnobSet.user_level
+	except AttributeError:
+		print '%17s' % 'UserLevel:'
+
+	# System Level
+	try:
+		print '%18s' % 'SystemLevel: ' + newKnobSet.system_level
+	except AttributeError:
+		print '%17s' % 'SystemLevel:'
+
+	# Platforms
+	try:
+		sys.stdout.write('%18s' % 'Platforms: ')
+		print(','.join(newKnobSet.platforms))
+	except AttributeError:
+		pass
+
+	# PayloadKey Info
+	for p in newKnobSet.payloads:
+		print '\n%18s' % 'PayloadKey: ' + sgr_color.bld + p.key + sgr_color.clr
+		
+		try:
+			print '%18s' % 'Title: ' + expandLocalizedString(p.title)
+		except AttributeError:
+			print '%17s' % 'Title:'
+
+		try:
+			print '%18s' % 'Description: ' + p.description
+		except AttributeError:
+			print '%17s' % 'Description:'
+
+		print '%18s' % 'Type: ' + p.type
+
+		try:
+			print '%18s' % 'Required: ' + p.required
+		except AttributeError:
+			pass
+
+		try:
+			print '%18s' % 'Optional: ' + p.optional
+		except AttributeError:
+			pass
+
+		try:
+			if p.hint_string and isinstance(p.hint_string, list):
+				firstValue = True
+				for hint_string in p.hint_string:
+					if firstValue:
+						firstValue = False
+						print '%18s' % 'AvailableValues: ' + hint_string
+					else:
+						print '%18s' % '' + hint_string
+			elif p.default_value:
+				print '%18s' % 'Hint String: ' + p.hint_string
+		except AttributeError:
+			pass
+
+		try:
+			firstValue = True
+			for available_value in p.available_values:
+				value = re.search('value:(["\']?.*?)[,}]', available_value, re.DOTALL)
+				if value:
+					if firstValue:
+						firstValue = False
+						print '%18s' % 'AvailableValues: ' + value.group(1)
+					else:
+						print '%18s' % '' + value.group(1)
+		except AttributeError:
+			pass
+
+		try:
+			if p.default_value and isinstance(p.default_value, list):
+				sys.stdout.write('%18s' % 'DefaultValue: ')
+				print("\t\n\t\t\t".join(p.default_value))
+			elif p.default_value:
+				print '%18s' % 'DefaultValue: ' + p.default_value
+		except AttributeError:
+			pass
+	sys.exit()
+
 def main(argv):
 
 	# Parse input arguments
@@ -558,17 +640,17 @@ def main(argv):
 
 	# Get path to javascript file.
 	if args.file:
-		file = args.file
+		file_path = args.file
 	else:
-		file = file_pm_javascript_packed
+		file_path = file_pm_javascript_packed
 
 	# Verify passed file path is valid
-	if not os.path.isfile(file):
-		print 'file doesn\'t exist: ' + file
+	if not os.path.isfile(file_path):
+		print 'file doesn\'t exist: ' + file_path
 		sys.exit()
 
 	# Create array of all available KnobSet names from the 'knobSetProperties' array.
-	knobSets = knobSetList(file)
+	knobSets = knobSetList(file_path)
 	if not knobSets:
 		print 'Found no KnobSet array in passed file, are you sure Server.app is installed and the file path is correct?'
 		sys.exit()
@@ -584,109 +666,10 @@ def main(argv):
 			print args.knobset + ' is not a valid KnobSet.'
 			print 'To see all available KnobSets, use the -l flag'
 			sys.exit()
+		printKnobSet(file_path, args.knobset)
 
-		# Populate a new knobset class instance for selected knobSet
-		newKnobSet = knobSetInfo(file, args.knobset)
-
-		# Add newline
-		print ''
-
-		try:
-			print '%18s' % 'Payload Name: ' + newKnobSet.payload_name
-		except AttributeError:
-			print '%17s' % 'Payload Name:'
-
-		try:
-			if isinstance(newKnobSet.payload_type, list):
-				firstValue = True
-				for payloadType in newKnobSet.payload_type:
-					if firstValue:
-						firstValue = False
-						print '%18s' % 'Payload Types: ' + payloadType
-					else:
-						print '%18s' % '' + payloadType
-			else:
-				print '%18s' % 'Payload Type: ' + newKnobSet.payload_type
-		except AttributeError:
-			print '%17s' % 'Payload Type:'
-
-		try:
-			print '%18s' % 'Unique: ' + newKnobSet.unique
-		except AttributeError:
-			print '%17s' % 'Unique:'
-
-		# Using the values in the knobSet class, print to stdout:
-		# User Level
-		try:
-			print '%18s' % 'UserLevel: ' + newKnobSet.user_level
-		except AttributeError:
-			print '%17s' % 'UserLevel:'
-
-		# System Level
-		try:
-			print '%18s' % 'SystemLevel: ' + newKnobSet.system_level
-		except AttributeError:
-			print '%17s' % 'SystemLevel:'
-
-		# Platforms
-		try:
-			sys.stdout.write('%18s' % 'Platforms: ')
-			print(','.join(newKnobSet.platforms))
-		except AttributeError:
-			pass
-
-		# PayloadKey Info
-		for p in newKnobSet.payloads:
-			print '\n%18s' % 'PayloadKey: ' + sgr_color.bld + p.key + sgr_color.clr
-			
-			try:
-				print '%18s' % 'Title: ' + expandLocalizedString(p.title)
-			except AttributeError:
-				print '%17s' % 'Title:'
-
-			try:
-				print '%18s' % 'Description: ' + p.description
-			except AttributeError:
-				print '%17s' % 'Description:'
-
-			print '%18s' % 'Type: ' + p.type
-
-			try:
-				print '%18s' % 'Required: ' + p.required
-			except AttributeError:
-				pass
-
-			try:
-				print '%18s' % 'Optional: ' + p.optional
-			except AttributeError:
-				pass
-
-			try:
-				print '%18s' % 'Hint String: ' + expandLocalizedString(p.hint_string)
-			except AttributeError:
-				pass
-
-			try:
-				firstValue = True
-				for available_value in p.available_values:
-					value = re.search('value:(["\']?.*?)[,}]', available_value, re.DOTALL)
-					if value:
-						if firstValue:
-							firstValue = False
-							print '%18s' % 'AvailableValues: ' + value.group(1)
-						else:
-							print '%18s' % '' + value.group(1)
-			except AttributeError:
-				pass
-
-			try:
-				if p.default_value and isinstance(p.default_value, list):
-					sys.stdout.write('%18s' % 'DefaultValue: ')
-					print("\t\n\t\t\t".join(p.default_value))
-				elif p.default_value:
-					print '%18s' % 'DefaultValue: ' + p.default_value
-			except AttributeError:
-				pass
+	print 'No option was passed.'
+	print 'To see all available KnobSets, use the -l flag'
 
 if __name__ == "__main__":
     main(sys.argv[1:])
