@@ -213,9 +213,9 @@ def knobSetList(file_path):
 		file_content = mmap.mmap(f.fileno(), 0, prot=mmap.PROT_READ)
 
 		# Get all knobSetProperty names
-		knobSetListMatch = re.search('knobSetProperties:\[([",a-zA-Z]+)\],', file_content)
+		knobSetListMatch = re.search('knobSetProperties:\[([",a-zA-Z\n]+)\],', file_content)
 		if knobSetListMatch:
-			return knobSetListMatch.group(1).translate(None, ' "').split(',')
+			return knobSetListMatch.group(1).translate(None, ' "\n').split(',')
 
 def parseChildViews(knobSetPayload, knobSetExtendMatch, knobSetRealName, child_views, string):
 
