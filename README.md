@@ -24,7 +24,7 @@ The test was mostly successful, but there are still work that needs to be done t
 
 ## Usage
 
-Run this script on a manchine which has Server.app located in the Applications folder.
+Run this script on a machine which has Server.app located in the Applications folder.
 
 Use the `-l/--list` flag to get a list of all available KnobSets for the current version of Profile Manager:
 
