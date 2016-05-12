@@ -3,7 +3,7 @@
 Script to extract payload information from the Profile Manager source code.
 
 **Disclaimer: This script is currently just a proof of concept, NOT a finished tool.**
-**Many of the regexes and python implementations are not refined, just the first I could think of to do the job.**
+            **Many of the regexes and python implementations are not refined, just the first I could think of to do the job.**
 
 Here's a link to my companion blog post for this script: [Extracting Payload Keys From Profile Manager]() 
 
