@@ -24,7 +24,7 @@ Run this script on a manchine which has Server.app located in the Applications f
 
 Use the `-l/--list` flag to get a list of all available KnobSets for the current version of Profile Manager:
 
-```bash
+```console
 $ ./profileManagerKeyExtractor.py -l
 adCertKnobSets
 airplayKnobSets
@@ -80,7 +80,7 @@ xsanKnobSets
 
 Then, use the `-k/--knobset` flag followed by a KnobSet from the list to print it's payload key and information.
 
-```bash
+```console
 $ ./profileManagerKeyExtractor.py -k calDavKnobSets
 
     Payload Name: CalDAV
@@ -95,13 +95,12 @@ $ ./profileManagerKeyExtractor.py -k calDavKnobSets
      Description: The display name of the account
             Type: String
      Hint String: optional
-    DefaultValue: My CalDAV Account
+    DefaultValue: My Calendar Account
 
       PayloadKey: CalDAVHostName
            Title: Account Hostname and Port
      Description: The CalDAV hostname or IP address and port number
             Type: String
-     Hint String: required
 
       PayloadKey: CalDAVPort
            Title:
@@ -113,21 +112,20 @@ $ ./profileManagerKeyExtractor.py -k calDavKnobSets
            Title: Principal URL
      Description: The Principal URL for the CalDAV account
             Type: String
-     Hint String: optional
 
       PayloadKey: CalDAVUsername
            Title: Account User name
      Description: The CalDAV user name
             Type: String
-     Hint String: (OTA: required)
-                  (Manual: set on device)
+ AvailableValues: required (OTA)
+                  set on device (Manual)
 
       PayloadKey: CalDAVPassword
            Title: Account Password
      Description: The CalDAV password
             Type: String
-     Hint String: (OTA: optional)
-                  (Manual: set on device)
+ AvailableValues: optional (OTA)
+                  set on device (Manual)
 
       PayloadKey: CalDAVUseSSL
            Title: Use SSL
