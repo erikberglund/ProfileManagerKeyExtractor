@@ -78,7 +78,7 @@ webContentFilterKnobSets
 xsanKnobSets
 ```
 
-Then, use the `-k/--knobset` flag followed by a KnobSet from the list to print it's payload key and information.
+Then, use the `-k/--knobset` flag followed by a KnobSet from the list to print it's payload keys and information.
 
 ```console
 $ ./profileManagerKeyExtractor.py -k calDavKnobSets
