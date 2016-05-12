@@ -15,7 +15,7 @@ I've written this script to test the possibility of extracting payload informati
 The test was mostly successful, but there are still work that needs to be done to the parsing. For example:
 
 * Some values are missed in parsing as the regexes aren't matching everything they should.
-* Payloads which take a single or nested dicts, or an array of dicts.
+* Any dicts or arrays of dicts is not handled.
 * Strings with the prefix **internal_use** reference a value somewhere else in the code that I haven't looked into:  
 
  ```bash
