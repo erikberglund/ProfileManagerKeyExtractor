@@ -117,14 +117,14 @@ $ ./profileManagerKeyExtractor.py -k calDavKnobSets
            Title: Account User name
      Description: The CalDAV user name
             Type: String
- AvailableValues: required (OTA)
+     Hint String: required (OTA)
                   set on device (Manual)
 
       PayloadKey: CalDAVPassword
            Title: Account Password
      Description: The CalDAV password
             Type: String
- AvailableValues: optional (OTA)
+     Hint String: optional (OTA)
                   set on device (Manual)
 
       PayloadKey: CalDAVUseSSL
