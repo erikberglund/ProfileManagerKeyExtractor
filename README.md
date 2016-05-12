@@ -8,9 +8,11 @@ Here's a link to my companion blog post for this script: [Extracting Payload Key
 
 I've written this script to test the possibility of extracting payload information directly from a Profile Manager installation to circumvent having to create and export profiles from the GUI in order to find the keys Profile Manager includes in a profile.
 
-The test was mostly successful, but there are still work that needs to be done to the parsing on the more complex structures, like payloads which take a single or nested dicts, or an array of dicts for example.
+The test was mostly successful, but there are still work that needs to be done to the parsing:
 
-Strings with the prefix **internal_use** reference a value somewhere else in the code that I haven't looked into:
+* Some values are missed in parsing as the regexes aren't matching everything they should.
+* Payloads which take a single or nested dicts, or an array of dicts.
+* Strings with the prefix **internal_use** reference a value somewhere else in the code that I haven't looked into:
 
 _Example:_
 
