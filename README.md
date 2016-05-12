@@ -10,7 +10,7 @@ I've written this script to test the possibility of extracting payload informati
 
 The test was mostly successful, but there are still work that needs to be done to the parsing on the more complex structures, like payloads which take a single or nested dicts, or an array of dicts for example.
 
-There are also some strings returned with prefix **internal_use** that reference a value somewhere else in the code that I haven't looked into yet:
+There are also some strings returned with prefix **internal_use** that reference a value somewhere else I haven't looked into:
 
 _Example:_
 
