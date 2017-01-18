@@ -1,5 +1,7 @@
 ## ProfileManagerKeyExtractor
 
+# This script was just an early test and proof of concept. @mosen has written a real tool for this now, please check that out instead: https://github.com/mosen/profiledocs
+
 Script to extract payload information from the Profile Manager source code.
 
 ## Disclaimer
